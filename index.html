@@ -79,21 +79,52 @@ const firebaseConfig = {
     const storage = firebase.storage();
     const functions = firebase.functions();
 
-    // Upload handler
-    document.getElementById('btnUpload').onclick = async () => {
-      const files = document.getElementById('fileInput').files;
-      const status = document.getElementById('uploadStatus');
-      status.innerHTML = 'Uploading...';
-      for (const file of files) {
-        const tag = prompt('Nhập tag cho file ' + file.name, 'general');
-        const path = `${tag}/${Date.now()}_${file.name}`;
-        const ref = storage.ref().child(path);
-        await ref.put(file);
-        const url = await ref.getDownloadURL();
-        status.innerHTML += `<p>✅ ${file.name} tải lên thành công. <a href="${url}" target="_blank">Xem</a></p>`;
-      }
-      status.innerHTML += '<p>Hoàn tất!</p>';
-    };
+   <!-- Upload handler với progress bar -->
+<script>
+document.getElementById('btnUpload').onclick = async () => {
+  const files = document.getElementById('fileInput').files;
+  const status = document.getElementById('uploadStatus');
+  status.innerHTML = ''; 
+
+  for (const file of files) {
+    const tag = prompt('Nhập tag cho file ' + file.name, 'general');
+    const path = `${tag}/${Date.now()}_${file.name}`;
+    const ref = storage.ref().child(path);
+
+    // Tạo progress bar
+    const container = document.createElement('div');
+    container.style.margin = '0.5rem 0';
+    const barBg = document.createElement('div');
+    barBg.style.width = '100%';
+    barBg.style.background = '#eee';
+    const bar = document.createElement('div');
+    bar.style.height = '8px';
+    bar.style.width = '0%';
+    bar.style.background = '#3b82f6';
+    barBg.appendChild(bar);
+    status.appendChild(document.createTextNode(file.name + ':'));
+    status.appendChild(barBg);
+
+    // Bắt sự kiện upload để cập nhật progress
+    const uploadTask = ref.put(file);
+    uploadTask.on('state_changed', snapshot => {
+      const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      bar.style.width = percent + '%';
+    });
+
+    // Chờ hoàn tất
+    await uploadTask;
+    const url = await ref.getDownloadURL();
+
+    // Hiển thị link sau khi xong
+    const p = document.createElement('p');
+    p.innerHTML = `✅ ${file.name} đã upload. <a href="${url}" target="_blank">Xem</a>`;
+    status.appendChild(p);
+  }
+
+  status.appendChild(document.createTextNode('Hoàn tất tất cả upload!'));
+};
+
 
     // Chat handler
     document.getElementById('btnSend').onclick = async () => {
