@@ -54,93 +54,90 @@
     </section>
     <section id="guide" class="hidden">
       <h2>Hướng dẫn sử dụng</h2>
-      <p>1. Upload tài liệu: PDF, DOCX, TXT hoặc ảnh chart.<br>
-         2. Chat bằng tiếng Việt tự nhiên.<br>
-         3. Để nâng cấp AI, theo dõi thông báo từ bot Discord hoặc trang này.
+      <p>
+        1. Upload tài liệu: PDF, DOCX, TXT hoặc ảnh chart.<br>
+        2. Chat bằng tiếng Việt tự nhiên.<br>
+        3. Để nâng cấp AI, theo dõi thông báo từ bot Discord hoặc trang này.
       </p>
     </section>
   </main>
   <footer>
-    © 2025 Quốc Anh Spears | <a href="https://github.com/AnhSpears" target="_blank" style="color:#fff;">GitHub</a>
+    © 2025 Quốc Anh Spears | 
+    <a href="https://github.com/AnhSpears" target="_blank" style="color:#fff;">GitHub</a>
   </footer>
 
   <script>
-    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDohI1r7cdc6rFJMgEQj21QYPJYceJC49I",
-  authDomain: "ai-program-ec426.firebaseapp.com",
-  projectId: "ai-program-ec426",
-  storageBucket: "ai-program-ec426.firebasestorage.app",
-  messagingSenderId: "904220682164",
-  appId: "1:904220682164:web:e26dd3ca06cb1ccb8b74e1",
-  measurementId: "G-160LGNBKNL"
-};
+    // Firebase cấu hình (thay bằng config của bạn)
+    const firebaseConfig = {
+      apiKey: "AIzaSyDohI1r7cdc6rFJMgEQj21QYPJYceJC49I",
+      authDomain: "ai-program-ec426.firebaseapp.com",
+      projectId: "ai-program-ec426",
+      storageBucket: "ai-program-ec426.appspot.com",
+      messagingSenderId: "904220682164",
+      appId: "1:904220682164:web:e26dd3ca06cb1ccb8b74e1",
+      measurementId: "G-160LGNBKNL"
+    };
     firebase.initializeApp(firebaseConfig);
     const storage = firebase.storage();
     const functions = firebase.functions();
 
-   <!-- Upload handler với progress bar -->
+    // Upload handler với progress bar
+    document.getElementById('btnUpload').onclick = async () => {
+      const files = document.getElementById('fileInput').files;
+      const status = document.getElementById('uploadStatus');
+      status.innerHTML = '';
 
-document.getElementById('btnUpload').onclick = async () => {
-  const files = document.getElementById('fileInput').files;
-  const status = document.getElementById('uploadStatus');
-  status.innerHTML = ''; 
+      for (const file of files) {
+        const tag = prompt('Nhập tag cho file ' + file.name, 'general');
+        const path = `${tag}/${Date.now()}_${file.name}`;
+        const ref = storage.ref().child(path);
 
-  for (const file of files) {
-    const tag = prompt('Nhập tag cho file ' + file.name, 'general');
-    const path = `${tag}/${Date.now()}_${file.name}`;
-    const ref = storage.ref().child(path);
+        // Tạo progress bar
+        const barBg = document.createElement('div');
+        barBg.style.width = '100%';
+        barBg.style.background = '#eee';
+        barBg.style.margin = '0.5rem 0';
+        const bar = document.createElement('div');
+        bar.style.height = '8px';
+        bar.style.width = '0%';
+        bar.style.background = '#3b82f6';
+        barBg.appendChild(bar);
+        status.appendChild(document.createTextNode(file.name + ': '));
+        status.appendChild(barBg);
 
-    // Tạo progress bar
-    const container = document.createElement('div');
-    container.style.margin = '0.5rem 0';
-    const barBg = document.createElement('div');
-    barBg.style.width = '100%';
-    barBg.style.background = '#eee';
-    const bar = document.createElement('div');
-    bar.style.height = '8px';
-    bar.style.width = '0%';
-    bar.style.background = '#3b82f6';
-    barBg.appendChild(bar);
-    status.appendChild(document.createTextNode(file.name + ':'));
-    status.appendChild(barBg);
+        // Upload và lắng nghe tiến độ
+        const uploadTask = ref.put(file);
+        uploadTask.on('state_changed', snapshot => {
+          const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          bar.style.width = pct + '%';
+        });
 
-    // Bắt sự kiện upload để cập nhật progress
-    const uploadTask = ref.put(file);
-    uploadTask.on('state_changed', snapshot => {
-      const percent = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-      bar.style.width = percent + '%';
-    });
+        await uploadTask;
+        const url = await ref.getDownloadURL();
+        const p = document.createElement('p');
+        p.innerHTML = `✅ ${file.name} đã upload. <a href="${url}" target="_blank">Xem</a>`;
+        status.appendChild(p);
+      }
 
-    // Chờ hoàn tất
-    await uploadTask;
-    const url = await ref.getDownloadURL();
-
-    // Hiển thị link sau khi xong
-    const p = document.createElement('p');
-    p.innerHTML = `✅ ${file.name} đã upload. <a href="${url}" target="_blank">Xem</a>`;
-    status.appendChild(p);
-  }
-
-  status.appendChild(document.createTextNode('Hoàn tất tất cả upload!'));
-};
-
+      status.appendChild(document.createTextNode('Hoàn tất tất cả upload!'));
+    };
 
     // Chat handler
     document.getElementById('btnSend').onclick = async () => {
       const input = document.getElementById('chatInput');
-      const text = input.value.trim(); if (!text) return;
+      const text = input.value.trim();
+      if (!text) return;
       const chatWin = document.getElementById('chatWindow');
       chatWin.innerHTML += `<div><strong>Bạn:</strong> ${text}</div>`;
       input.value = '';
-      // Gọi Cloud Function "chatBot"
+
       const chatBot = functions.httpsCallable('chatBot');
       const res = await chatBot({ message: text });
       chatWin.innerHTML += `<div><strong>AI:</strong> ${res.data.reply}</div>`;
       chatWin.scrollTop = chatWin.scrollHeight;
     };
 
-    // Simple hash-based navigation
+    // Hash-based navigation
     window.addEventListener('hashchange', () => {
       document.querySelectorAll('main section').forEach(sec => sec.classList.add('hidden'));
       const id = window.location.hash.substring(1) || 'home';
@@ -150,4 +147,3 @@ document.getElementById('btnUpload').onclick = async () => {
   </script>
 </body>
 </html>
-
