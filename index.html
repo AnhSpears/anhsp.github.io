@@ -78,6 +78,9 @@ const firebaseConfig = {
   measurementId: "G-160LGNBKNL"
 };
     firebase.initializeApp(firebaseConfig);
+     firebase.auth().signInAnonymously()
+      .then(() => console.log("✅ Signed in anonymously"))
+      .catch(err => console.error("❌ Auth error:", err));
     const storage = firebase.storage();
     const functions = firebase.functions();
 
