@@ -3,10 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chào mừng đến với trang của tôi</title>
+  <title>AI Chatbot & Upload System</title>
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-functions-compat.js"></script>
+  <style>
+    body { margin:0; font-family:Arial,sans-serif; }
+    header, footer { background:#333; color:#fff; padding:1rem; text-align:center; }
+    nav a { margin:0 1rem; color:#fff; text-decoration:none; }
+    main { padding:2rem; }
+    section { margin-bottom:2rem; }
+    .hidden { display:none; }
+    #chatWindow { border:1px solid #ccc; padding:1rem; height:300px; overflow-y:auto; }
+    #chatInput { width:80%; }
+  </style>
 </head>
 <body>
-  <h1>Xin chào!</h1>
-  <p>Mình là [Tên bạn], đây là trang GitHub Pages cá nhân.</p>
+  <header>
+    <nav>
+      <a href="#home">Trang chủ</a>
+      <a href="#profile">Profile</a>
+      <a href="#upload">Upload</a>
+      <a href="#chat">Chat AI</a>
+      <a href="#guide">Hướng dẫn</a>
+    </nav>
+  </header>
+  <main>
+    <section id="home">
+      <h1>Chào mừng đến với AI Chatbot</h1>
+      <p>Hệ thống cho phép bạn upload tài liệu, phân tích ảnh chart, chat bằng ngôn ngữ tự nhiên.</p>
+    </section>
+    <section id="profile" class="hidden">
+      <h2>Thông tin cá nhân</h2>
+      <p>Quốc Anh Spears - Developer & AI Enthusiast</p>
+    </section>
+    <section id="upload">
+      <h2>Upload tài liệu</h2>
+      <input type="file" id="fileInput" multiple />
+      <button id="btnUpload">Upload</button>
+      <div id="uploadStatus"></div>
+    </section>
+    <section id="chat">
+      <h2>Chat với AI</h2>
+      <div id="chatWindow"></div>
+      <input type="text" id="chatInput" placeholder="Nhập câu hỏi..." />
+      <button id="btnSend">Gửi</button>
+    </section>
+    <section id="guide" class="hidden">
+      <h2>Hướng dẫn sử dụng</h2>
+      <p>1. Upload tài liệu: PDF, DOCX, TXT hoặc ảnh chart.<br>
+         2. Chat bằng tiếng Việt tự nhiên.<br>
+         3. Để nâng cấp AI, theo dõi thông báo từ bot Discord hoặc trang này.
+      </p>
+    </section>
+  </main>
+  <footer>
+    © 2025 Quốc Anh Spears | <a href="https://github.com/AnhSpears" target="_blank" style="color:#fff;">GitHub</a>
+  </footer>
+
+  <script>
+    // TODO: Thay thế bằng config dự án Firebase của bạn
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_AUTH_DOMAIN",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_STORAGE_BUCKET",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const storage = firebase.storage();
+    const functions = firebase.functions();
+
+    // Upload handler
+    document.getElementById('btnUpload').onclick = async () => {
+      const files = document.getElementById('fileInput').files;
+      const status = document.getElementById('uploadStatus');
+      status.innerHTML = 'Uploading...';
+      for (const file of files) {
+        const tag = prompt('Nhập tag cho file ' + file.name, 'general');
+        const path = `${tag}/${Date.now()}_${file.name}`;
+        const ref = storage.ref().child(path);
+        await ref.put(file);
+        const url = await ref.getDownloadURL();
+        status.innerHTML += `<p>✅ ${file.name} tải lên thành công. <a href="${url}" target="_blank">Xem</a></p>`;
+      }
+      status.innerHTML += '<p>Hoàn tất!</p>';
+    };
+
+    // Chat handler
+    document.getElementById('btnSend').onclick = async () => {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim(); if (!text) return;
+      const chatWin = document.getElementById('chatWindow');
+      chatWin.innerHTML += `<div><strong>Bạn:</strong> ${text}</div>`;
+      input.value = '';
+      // Gọi Cloud Function "chatBot"
+      const chatBot = functions.httpsCallable('chatBot');
+      const res = await chatBot({ message: text });
+      chatWin.innerHTML += `<div><strong>AI:</strong> ${res.data.reply}</div>`;
+      chatWin.scrollTop = chatWin.scrollHeight;
+    };
+
+    // Simple hash-based navigation
+    window.addEventListener('hashchange', () => {
+      document.querySelectorAll('main section').forEach(sec => sec.classList.add('hidden'));
+      const id = window.location.hash.substring(1) || 'home';
+      document.getElementById(id).classList.remove('hidden');
+    });
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  </script>
 </body>
 </html>
+
